@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Mythos of Model Interpretability</title>
+    <link rel="stylesheet" href="../paper.css">   
+</head>
+<body>
+    <header>
+        <h1>The Mythos of Model Interpretability</h1>
+        <div class="authors">Zachary C. Lipton</div>
+        <div class="publication">2017</div>
+
+        <p>
+            This paper explores definitions of interpretability in supervised models.
+        </p>
+
+        <a href="https://arxiv.org/pdf/1606.03490" class="paper-link" target="_blank">https://arxiv.org/pdf/1606.03490</a>
+    </header>
+    
+    <main>
+
+        <section>
+            <h2>1. Introduction</h2>
+            <p>
+                As deep neural networks are used more and more often in critical cases like healthcare and markets, the human inability to understand them has arisen as a problem.
+                Interpretability is cited as a solution yet it seems the definition varies to the point of discordancy. The author accepts the word as referring to several concepts. Then focuses on supervised learning to ask both <strong>what</strong> is interpretability and <strong>why</strong> we need it.
+            </p>
+        </section>
+
+        <section>
+            <h2>2. Desiderata of Interpretability Research</h2>
+            <p>
+                One of the aims here is to clearly give definitions for interpretability and one of the ways to do that is to consider the purposes or desiderata. 
+                Need for interpretability come up when there is a mismatch between what the model does and what we need from it. 
+                One source of conflict is the fact that the goal error minimization in supervised learning does not always capture more complex, real-life goals. Another source is a mismatch between offline training data and real use-cases which are often dynamic.
+            </p>
+            
+            <h4>2.1. Trust</h4>
+            <p>
+                Some describe interpretability as a prerequisite to trust. What is trust? Is it confidence that the model will perform well? For a sufficiently accurate model, we can expect it to perform well and we don't need interpretability? But even a good model can be biased (for example, have racial bias in predicting crime rates) and so it is also important to consider for what examples for which it is accurate. Another aspect to trust is how we feel letting the model take charge? Does it make errors for the same examples a human might? If so, maybe we can trust it.
+            </p>
+            
+            <h4>2.2. Causality</h4>
+            <p>
+                Interpretability is attractive for understanding what features lead to a decision. This kind of knowledge is often exploited to study possible causal relationships like with thalidomide and birth defects.
+            </p>
+            
+            <h4>2.3. Transferability</h4>
+            <p>
+                Humans have far richer generalization skills, but models are at times deployed in situations that need stronger generalization than they have. This includes dynamic environments, scenarios when the model's own performance alters the environment and adversarial situations. Even deliberate adjustments to features that go into calculating FICO scores which do not necessarily correlate with an ability to repay debt.
+            </p>
+            
+            <h4>2.4. Informativeness</h4>
+            <p>
+                We can also use models to provide human decision makers with information, as opposed to using them to make decisions. Interpretations or explanations from models can be valuable even if they don't reveal the model's internal workings (like showing similar cases that support a diagnosis). Sometimes we use supervised learning approaches when our actual goal is more like unsupervised learning - exploring and understanding data patterns.
+            </p>
+            
+            <h4>2.5. Fair and Ethical Decision-Making</h4>
+            <p>
+                As models are deployed in critical social contexts like credit approval and crime recidivism prediction, interpretability is important in sniffing out bias and unfairness. The EU passed that any individual subject to algorithmic decisions has the right to explanation, and the right to contest based on the explanation.
+            </p>
+        </section>
+
+        <section>
+            <h2>3. Properties of Interpretable Models</h2>
+            <p>
+                These properties can be broadly classified into: transparency (how does the model work) and post-hoc explanations (apart from the decision, what else can the model tell me?)
+            </p>
+            
+            <h4>3.1. Transparency</h4>
+            <p>
+                Transparency can be considered in these three ways.
+            </p>
+            
+            <p><strong>3.1.1. SIMULATABILITY</strong></p>
+            <p>
+                This is the ability to understand the model in its entirety— the ability of a person to take an input and in reasonable time, step through the model's workings and arrive at the same answer. 
+                This is what inspires the idea that linear/lasso models are more interpretable than more complex ones. 
+                But of course, this is really a factor of size. Even moderately large linear models or deep decision trees can not always be stepped through in reasonable, human time.
+                Can't we then argue that some compact neural networks are more interpretable than some larger linear models.
+            </p>
+            
+            <p><strong>3.1.2. DECOMPOSABILITY</strong></p>
+            <p>
+                This means intelligibility— the expectation that the weights and decisions of a model should have intuitive explanations. But this relies on both how interpretable the inputs are in the first place.
+                But input features can be heavily engineered, anonymized and scaled in all sorts of ways.
+            </p>
+            
+            <p><strong>3.1.3. ALGORITHMIC TRANSPARENCY</strong></p>
+            <p>
+                With linear models, we understand how the training algorithm affects the error landscape and we can guarantee an optimal solution. Deep neural networks do not give this to us. Note that, neither does human reasoning.
+            </p>
+            
+            <h4>3.2. Post-hoc Interpretability</h4>
+            <p>
+                Post-hoc interpretations include natural language explanations, visualizations of learned representations or models, and explanations by example (e.g. this tumor is classified as malignant because to the model it looks a lot like these other tumors).
+                This is also the interpretability that humans generally have.
+            </p>
+            
+            <p><strong>3.2.1. TEXT EXPLANATIONS</strong></p>
+            
+            <p><strong>3.2.2. VISUALIZATION</strong></p>
+            
+            <p><strong>3.2.3. LOCAL EXPLANATIONS</strong></p>
+            
+            <p><strong>3.2.4. EXPLANATION BY EXAMPLE</strong></p>
+        </section>
+
+        <section>
+            <h2>4. Discussion</h2>
+            
+            <h4>4.1. Linear models are not strictly more interpretable than deep neural networks</h4>
+            
+            <h4>4.2. Claims about interpretability must be qualified</h4>
+            
+            <h4>4.3. In some cases, transparency may be at odds with the broader objectives of AI</h4>
+            
+            <h4>4.4. Post-hoc interpretations can potentially mislead</h4>
+            
+            <h4>4.5. Future Work</h4>
+        </section>
+
+        <section>
+            <h2>5. Contributions</h2>
+        </section>
+
+        <section>
+            <h2>Reflection</h2>
+            
+            <h4>What are the strengths?</h4>
+            <p>
+                <ol>
+                    <li>Reflective</li>
+                </ol>
+            </p>
+            
+            <h4>What are the weaknesses?</h4>
+            <p>
+                <ol>
+                    <li></li>
+                </ol>
+            </p>
+            
+            <h4>New Terms</h4>
+            <p>
+                <ol>
+                    <li></li>
+                </ol>
+            </p>
+        </section>
+
+        <a href="../index.html" class="back-link">← Back to all papers</a>
+    </main>
+    
+    <footer>
+        <p>© 2025 Sike Ogieva | Summary created for Interpretability of Deep Neural Networks, Spring 2025</p>
+    </footer>
+
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</body>
+</html>
