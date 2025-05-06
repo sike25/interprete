@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEQ2SEQ-VIS: A Visual Debugging Tool for Sequence-to-Sequence Models</title>
+    <link rel="stylesheet" href="../paper.css">   
+</head>
+<body>
+    <header>
+        <h1>SEQ2SEQ-VIS: A Visual Debugging Tool for Sequence-to-Sequence Models</h1>
+        <div class="authors">Hendrik Strobelt, Sebastian Gehrmann, Michael Behrisch, Adam Perer, Hanspeter Pfister, Alexander M. Rush</div>
+        <div class="publication">2018</div>
+
+        <p>
+            This paper presents a visual debugging tool for sequence to sequence models.
+        </p>
+
+        <a href="https://arxiv.org/pdf/1804.09299" class="paper-link" target="_blank">https://arxiv.org/pdf/1804.09299</a>
+        <a href="https://github.com/HendrikStrobelt/Seq2Seq-Vis" class="paper-link" target="_blank">https://github.com/HendrikStrobelt/Seq2Seq-Vis</a>
+    </header>
+    
+    <main>
+
+        <section>
+            <h2>1. INTRODUCTION</h2>
+            <p>
+                Attention-based sequence-to-sequence models (seq2seq) (or encoder-decoder models) are the state of the art in sequence prediction tasks 
+                like (machine translation, natural language generation, summaries). But the deep net structure of these models makes predictions 
+                hard to explain.
+            </p>
+            <p>
+                For example, when using a rule-based translation system, non-trivial mistranslations can be
+                investigated by examining what rule misfired. Neural networks do not have explicit rules to check. 
+            </p>
+            <p>
+                This work aims to keep the great performance of deep nets but aims to provide
+                the ability to interactively explore issues using SEQ2SEQ-VIS — a visual debugging tool.
+            </p>
+        </section>
+
+        <section>
+            <h2>2. SEQUENCE-TO-SEQUENCE MODELS AND ATTENTION</h2>
+            <p>
+                The assumption is that a sequence to sequence model for machine translation works in five stages:
+            </p>
+            
+            <h4>1. Encoder (S1):</h4>
+            <p>
+                This takes in a sequence of words in the source language and processes it (via RNN, LSTM, CNN or 
+                Transformer) into a sequence of vectors that capture the meaning 
+                of each word and their purpose within the sentence. 
+                This paper's method supports all encoding methods.
+            </p>
+            
+            <h4>2. Decoder (S2):</h4>
+            <p>
+                This has a similar mechanism to the encoder except that it does it for the target language, 
+                using the previous output tokens of the model.
+            </p>
+            
+            <h4>3. Attention (S3):</h4>
+            <p>
+                This is the stage where the decoder outputs and the encoder outputs interact. The attention mechanism seeks 
+                to find at what portions the current decoder sequence and the encoder sequence "match up". This is done by taking dot products.
+                Vectors that match up should result in higher values.
+            </p>
+            <p>
+                For example, in a machine translation task (English to French), the vector for "Hello" should get a high dot product with the vector for "Bonjour."
+            </p>
+            
+            <h4>4. Prediction (S4):</h4>
+            <p>
+                This stage involves computing probabilities for all the words in the target language that they might be 
+                the next token in the prediction. It uses the context vector resulting from the attention mechanism 
+                to predict this probability distribution.
+            </p>
+            
+            <h4>5. Search (S5):</h4>
+            <p>
+                Piecing together a translation is not as simple as picking the most likely token at each time step. 
+                This does not result in good predictions. 
+                Instead, we preserve the K most likely tokens at each time step
+                and when all branches have terminated (by predicting the stop token),
+                beam search (a variant of tree search) is used to find the translation with the highest score.
+            </p>
+            <p>
+                The visual analytics system is built around these five stages.
+            </p>
+        </section>
+
+        <section>
+            <h2>3. MOTIVATING CASE STUDY: DEBUGGING TRANSLATION</h2>
+            <p>
+                The authors present a representative case study to explain why their tool exists and 
+                how it might be used.
+            </p>
+            <p>
+                A user finds an instance mistranslated by a German-to-English model.
+            </p>
+            <p>
+                The source sentence: Die langsten Reisen fangen an, wenn es auf den Straßen dunkel wird.<br>   
+                The target sentence: The longest journeys begin, when it gets dark in the streets.<br>       
+                The mistranslation:  The longest journey begins, when it gets to the streets.
+            </p>
+            <p>
+                The model failed to translate <strong>dunkel</strong> into <strong>dark</strong>.
+            </p>
+            
+            <h4>Encoder (S1) Error?</h4>
+            <p>
+                SEQ2SEQ-VIS lets the user see encoder states from the training data
+                that are similar (in vector-ish distance) to 
+                the mistranslated <strong>dunkel</strong>. 
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/3ea43d42-afee-4759-ba06-21898e363c21" alt="Encoder state visualization">
+            </figure>
+            <p>
+                We can see that the closest instances match similar uses of the word. Therefore, 
+                the error is unlikely to have come from the encoder.
+            </p>
+            
+            <h4>Decoder (S2) Error?</h4>
+            <p>
+                SEQ2SEQ-VIS also lets the user see similar decoder states at time step \(t\)  
+                (The longest journey begins, when it gets) and time step \(t+1\) 
+                (The longest journey begins, when it gets to). 
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/3720e924-e74f-439e-a25f-d7830e6fc9c8" alt="Decoder state visualization">
+            </figure>
+            <p>
+                These decoder state at \(t+1\) is close to ones that support <strong>dark, darker</strong> 
+                or <strong>darkness</strong> as a prediction. Therefore, 
+                the error is unlikely to have come from the decoder.
+            </p>
+            
+            <h4>Attention (S3) Error?</h4>
+            <p>
+                SEQ2SEQ-VIS lets the user see that the connection from "get" to <strong>dunkel</strong> 
+                is very strong (wide). This means that the model is strongly focusing on 
+                "dunkel" when generating the next word in the English translation.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/d61c6425-fa62-46a6-a60d-5cf9733c7a9d" alt="Attention visualization">
+            </figure>
+            
+            <h4>Prediction (S4) Error?</h4>
+            <p>
+                SEQ2SEQ-VIS can also let us see the probabilities the model assigns to each word
+                to predict the next one in the sequence. 
+                And we can see (in Figure 5 above) that the model assigns a higher probability to "to" than "dunkel", but 
+                both probabilities are very close and so we would not consider the mistranslation a prediction error
+                as such local mistakes should be fixed by beam search.
+            </p>
+            
+            <h4>Search (S5) Error</h4>
+            <p>
+                We now know the problem is with the beam search. 
+                SEQ2SEQ-VIS lets the user examine the entire beam search tree. 
+                We see then that "dark" never makes it into our tree. 
+                So, we can imagine a reasonable global solution would be to
+                increase the value of K (the K-most likely next words, the width of the search tree).
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/2dbb4738-8089-4f8d-b52e-45a1b51eb65f" alt="Beam search tree visualization">
+            </figure>
+            <p>
+                SEQ2SEQ-VIS also lets the user evaluate what would have happened 
+                if she had forced the system to pick "dark" after "gets". 
+                And we see this would have given a correct solution.
+            </p>
+        </section>
+
+        <section>
+            <h2>4. GOALS AND TASKS</h2>
+            <p>
+                SEQ2SEQ-VIS aims to meet three domain goals for sequence-to-sequence models:    
+            </p>
+            <p>
+                <ol>
+                    <li>
+                        <strong>G1 - Examine Model Decisions (errors)</strong><br>      
+                        SEQ2SEQ-VIS helps users examine the model's decision chain (encoding, decoding, attention, and beam search)
+                        by providing the ability to visualize parts of each stage.
+                    </li>
+                    <li>
+                        <strong>G2 - Connect Decisions with Training Data Samples</strong><br>    
+                        Because, the training data is the model's worldview, examining past
+                        training data samples similar to the inference 
+                        instance we are investigating is often revealing.
+                    </li>
+                    <li>
+                        <strong>G3 - Test Alternative Decisions</strong><br>
+                        SEQ2SEQ-VIS also has the goal of allowing users to explore what-if scenarios by
+                        intervening in model decisions at different steps to see what possible outcomes could have resulted
+                        from a different decision.<br>  
+                        This is important in understanding what decisions would have been "correct" and therefore, in 
+                        brainstorming model-level fixes.
+                    </li>
+                </ol>
+            </p>
+            <p>
+                Using these goals, the authors compile five tasks for SEQ2SEQ-VIS:
+            </p>
+            <p>
+                <ol>
+                    <li>T1 - Create visualizations of each of our five decision stages [G1]</li>
+                    <li>T2 - Visualize the progression of latent vector sequences over time [G2]</li>
+                    <li>T3 - Explore vectors produced by decoder, encoder stages) and look at their nearest neighbor vectors pulled from the training set [G2]</li>
+                    <li>T4 - Generate reasonable alternative decisions for different stages of the model to compare possible corrections [G1, G3]</li>
+                    <li>T5 - Create an interface with a cohesive front-end for many sequence-to-sequence problems (like translation, summary, and generation) [G1, G2, G3]</li>
+                </ol>
+            </p>
+        </section>
+
+        <section>
+            <h2>5. DESIGN OF Seq2Seq-Vis</h2>
+            <p>
+                SEQ2SEQ-VIS was designed by experts in machine learning and experts in visualization. 
+                It facilitates two major modes of analysis: the translation view (the upper part) and the neighborhood view (the lower part).
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/bb0bd258-5dc8-4e73-80ca-1a5290f7f274" alt="SEQ2SEQ-VIS interface">
+            </figure>
+            <p>
+                We have each of the five stages of the model decision visualized. On top is the attention visualization with the source sequence in blue and the target sequence in yellow. Attention values are represented as edges between them- the larger the value, the thicker the edge [S3]. To prevent visual clutter, very skinnier edges are omitted.
+            </p>
+            <p>
+                The top K most likely words at each time step are listed under the chosen words of the target sequence [S4]. Below that is the Beamsearch Tree [S5]. 
+            </p>
+            <p>
+                Below the tree, the neighborhood view begins. 
+            </p>
+            <p>
+                This view is concerned primarily with allows us to compute sequence vectors (from the encoder and decoder, or even context vectors from the attention stage) and then search for similar vectors (precomputed from training data samples). These vectors are visualized in the state trajectories and the neighbor list. 
+            </p>
+            <p>
+                The vectors have their dimensions reduced by t-SNE (t-Distributed Stochastic Neighbor Embedding), non-metric MDS (Multidimensional Scaling) or a custom projection, so they and their distances from each other can be represented on our 2D screen. When we hover an input vector, its neighborhood vectors are highlighted. 
+            </p>
+            <p>
+                Furthermore, if three states from a decoder sequence have one common neighbor, that neighbor has its radius to \(r(x) = \sqrt{2x} = 2.5\) so more connected neighbors are bigger. Each input vector also has its own little cut out in the trajectory pictograms where we can more clearly examine its neighbors and how each vector changes in time. 
+            </p>
+            <p>
+                Clicking on a vector pulls up its neighbor list on the right, with the neighbor vectors written out in their original training sentences. 
+            </p>
+            
+            <h4>5.3. Global Encodings and Comparison Mode</h4>
+            <p>
+                SEQ2SEQ-VIS has a unified look and feel, with a consistent color scheme (encoder - blue, decoder - yellow, pivot - green, compare - violet). Clickable visual elements have round corners. Hovering highlights elements in red. 
+            </p>
+            <p>
+                We can trigger comparison mode which overlays elements and highlights differences in violet. Triggers are disabled in the comparison view.
+            </p>
+            
+            <h4>5.4. Interacting With Examples</h4>
+            <p>
+                Model and language focused interactions shift SEQ2SEQ-VIS into comparison mode.
+            </p>
+            <p>
+                Model-focused interactions helps model architects produce similar examples to a current sequence to test small, reasonable variations for various model stages. The user can click on a word to substitute it with a similar one. 
+                The program searches for neighbors for the selected word and displays them in a word cloud. Clicking on one of the option triggers an automatic replacement and a new translation in comparison mode.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/74115557-196a-4c86-b7b3-5e049a73f1a7" alt="Word substitution interface">
+            </figure>
+            <p>
+                Another model-focused interaction lets the user change predicted sequences (by modifying attention values) by repeatedly clicking an encoder word to give it more weight. 
+            </p>
+            <p>
+                Language-focused Interactions lets users write direct changes to the source or target sequences.
+            </p>
+        </section>
+
+        <section>
+            <h2>6. IMPLEMENTATION</h2>
+            <p>
+                SEQ2SEQ-VIS integrates a visualization client 
+                with a running sequence to sequence model through a REST API.
+            </p>
+            
+            <h4>Model Backend</h4>
+            <p>
+                The sequence to sequence models here were built with the OpenNMT toolkit. 
+                The authors plan to distribute Seq2Seq-Vis as the default visualization mode
+                for OpenNMT.
+            </p>
+            <p>
+                The model is modified to expose some internal components 
+                like latent vectors (Internal state vectors), 
+                search beams (alternative translation candidates) and attention values.
+            </p>
+            <p>
+                Interactive capabilities like the ability to decode
+                sentences as they are being constructed, 
+                and for users to modify attention values.
+            </p>
+            
+            <h4>Nearest Neighbor Implementation</h4>
+            <p>
+                The program also extracts and stores
+                hidden states from training data. These states are stored as HDF5 
+                (Hierarchical Data Format version 5) files.
+                The program uses the Faiss (Facebook AI Similarity Search) library 
+                for quick similarity searches in high-dimensional space. 
+            </p>
+            
+            <h4>Visualization Components</h4>
+            <p>
+                The visualization is built in Typescript and uses the D3.js library. 
+                Dimensionality reduction are done with the SciKit Learn 
+                library and include TSNE (t-Distributed Stochastic Neighbor Embedding) 
+                and MDS (Multidimensional Scaling) methods.
+            </p>
+            <p>
+                Flask connects the frontend with the back.
+            </p>
+        </section>
+
+        <section>
+            <h2>7. USE CASES</h2>
+            
+            <h4>Date Conversion</h4>
+            <p>
+                Task: Convert various date formats into the unified YYYY-MM-DD format.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/f1176031-37a8-49cf-ab29-8ffb07265221" alt="Date conversion example">
+            </figure>
+            
+            <h4>Abstractive Summarization</h4>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/8afd0f01-d642-47fb-9620-e715fdc037ac" alt="Abstractive summarization example">
+            </figure>
+            
+            <h4>Machine Translation</h4>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/adc3a628-3aa1-4ad1-9908-34fede555035" alt="Machine translation example">
+            </figure>
+        </section>
+
+        <section>
+            <h2>8. RELATED WORK</h2>
+            
+            <h4>Global Model Analysis</h4>
+            <p>
+                This is typically visualizing inside trained deep learning models.
+            </p>
+            <p>
+                CNNs
+                <ol>
+                    <li>Finding images that maximize the activation of convolutional units.</li>
+                    <li>Deconvolutional networks.</li>
+                    <li>Projecting neural activity onto images.</li>
+                </ol>
+            </p>
+            <p>
+                RNNs
+                <ol>
+                    <li>Understanding selected cells (some of which model clear phenomena like parentheses).</li>
+                    <li>LSTMVis (by these authors, too) lets us understand how combinations of hidden states activate.</li>
+                    <li>Examining activation pattern differences between correct and misclassified examples.</li>
+                    <li>RNNVis uses word clouds to show words that typically correspond to certain activation patterns.</li>
+                    <li>RNNbow shows gradient changes during training to help us see how the model is learning.</li>
+                </ol>
+            </p>
+            
+            <h4>Instance Based Analysis</h4>
+            <p>
+                This is about understanding model behavior on a single input.
+            </p>
+            <p>
+                CNNs
+                <ol>
+                    <li>Small perturbations in input images can drastically change predictions.</li>
+                    <li>Picasso is an interactive visualization tool that lets people distort image inputs to models.</li>
+                    <li>Interactively tweak feature values and observe how predictions change.</li>
+                </ol>
+            </p>
+            <p>
+                RNNs
+                <ol>
+                    <li>Gradient based methods to attribute tokens to predictions.</li>
+                </ol>
+            </p>
+            <p>
+                But the method of finding neighbors in the training data used in this paper is new. And the authors here
+                move away from treating the model as a black box and lean into the fact that the users of SEQ2SEQ-VIS 
+                understand how the model works.
+            </p>
+        </section>
+
+        <section>
+            <h2>9. CONCLUSIONS AND FUTURE WORK</h2>
+            <p>
+                Work has been impactful since release (5,500 page views, 156 likes on Github project).
+            </p>
+            <p>
+                <ol>
+                    <li>Extend tool to more sequences (video, audio, images?)</li>
+                    <li>Greater respect for the sequential order of sequences</li>
+                </ol>
+            </p>
+            <p>
+                The authors hope to inspire more methods that allow us to fix models without completely retraining them.
+            </p>
+        </section>
+
+        <section>
+            <h2>Reflection</h2>
+            
+            <h4>What are the strengths?</h4>
+            <p>
+                <ol>
+                    <li>The SEQ2SEQ-VIS tool is beautiful and involved engineering.</li>
+                </ol>
+            </p>
+            
+            <h4>What are the weaknesses?</h4>
+            <p>
+                <ol>
+                    <li>The SEQ2SEQ-VIS tool does not seem applicable to sequence-to-sequence models that do not follow the five stages as laid out.</li>
+                    <li>The SEQ2SEQ-VIS requires non-trivial modifications to the model.</li>
+                </ol>
+            </p>
+            
+            <h4>New Terms:</h4>
+            <p>
+                <ol>
+                    <li>beam search</li>
+                    <li>nlp pathway</li>
+                    <li>rest api</li>
+                    <li>HDF5 file</li>
+                    <li>Faiss Library</li>
+                    <li>OpenNMT</li>
+                    <li>D3 library</li>
+                    <li>TSNE and MDS projections</li>
+                    <li>Deconvolutional networks</li>
+                </ol>
+            </p>
+        </section>
+
+        <a href="../index.html" class="back-link">← Back to all papers</a>
+    </main>
+    
+    <footer>
+        <p>© 2025 Sike Ogieva | Summary created for Interpretability of Deep Neural Networks, Spring 2025</p>
+    </footer>
+
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</body>
+</html>

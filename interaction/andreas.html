@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analogs of Linguistic Structure in Deep Representations</title>
+    <link rel="stylesheet" href="../paper.css">   
+</head>
+<body>
+    <header>
+        <h1>Analogs of Linguistic Structure in Deep Representations</h1>
+        <div class="authors">Jacob Andreas, Dan Klein</div>
+        <div class="publication">2017</div>
+
+        <p>
+            This paper demonstrates that if you taught neural networks to pose as collaborative agents in 
+            a communication game, the "language" they learn to solve the task shares the compositionality of natural language.
+        </p>
+
+        <a href="https://arxiv.org/pdf/1707.08139" class="paper-link" target="_blank">https://arxiv.org/pdf/1707.08139</a>
+    </header>
+    
+    <main>
+
+        <section>
+            <h2>1. Task</h2>
+            <p>
+                The authors use a communication game to get two neural networks to develop a shared 'language',
+                so they can analyze this language and figure out whether it shares anything with our natural language.
+            </p>
+            <p>
+                The game has:
+                <ol>
+                    <li>A world <strong>W</strong> of 1-20 objects. These objects have attributes (for example, shape and color-- red circle, blue circle, blue square).</li>
+                    <li>A target subset <strong>X</strong> of <strong>W</strong> (for example, the blue objects).</li>
+                </ol>
+            </p>
+            <p>
+                The <strong>speaker</strong> (or encoder) is an RNN which can see the world <strong>W</strong> and the target subset <strong>X</strong>, and tries to learn a 64-dimensional vector to describe <strong>X</strong>.<br>        
+                The <strong>listener</strong> (or decoder) is an MLP which is trained to decipher the 64-dimensional vector and correctly label an object \(W_i\) from <strong>W</strong> as either belonging to <strong>X</strong> or not.
+            </p>
+            <p>
+                The GENX dataset is used for training. It contains 4,170 natural language expressions and their corresponding logical rule forms. For example, "everything but the red circles" and its logical rule form: \(! (circle \cap red)\).<br>        
+                These examples are scattered across 273 instances of the game (in other words, 273 worlds).
+            </p>
+            <p>
+                Terms:<br>     
+                \(e(W, X)\) - The logical expression translated from a human description of <strong>X</strong> within <strong>W</strong>. Or
+                the human description itself. For example: it refers to both \(! (circle \cap red)\) and "everything but the red circles".
+            </p>
+            <p>
+                \([e]_W\) - The result of evaluating the rule e(W) against W. For example:<br>    
+                If <strong>W</strong> is {red circle, red square, blue circle}, \([e]_W\) will be {red square, blue circle}
+            </p>
+            <p>
+                \(f(W, X)\) - The 64-dimensional output of the encoder. Its own description of <strong>X</strong> within <strong>W</strong>.
+            </p>
+            <p>
+                \([f]_W\) - The full vector of decoder outputs on <strong>W</strong>.<br>         
+                If <strong>W</strong> is {red circle, red square, blue circle}, \([f]_W\) will be {0, 1, 1}
+            </p>
+        </section>
+
+        <section>
+            <h2>3. Approach</h2>
+            <p>
+                As one could guess, the encoder-decoder system reaches near perfect accuracy on this pretty simple task. But the authors are only interested in analyzing HOW it does— in particular, what is the nature of the encoder's output vector? How does it resemble or not resemble natural language? 
+            </p>
+            <p>
+                Since the model performs so well, for each world in the dataset, we would expect e(W) = f(W) for a given rule and there is nothing revelatory about this. Equality here means that when the rule is executed on the world, it selects the same objects. The authors want to test semantic equivalence.
+            </p>
+            <p>
+                They collect worlds from GenX that have not been seen by the model (in training or testing), and test a single rule across all of these worlds. For example:
+            </p>
+            <p>
+                Human expression:<br>     
+                e = "circle"
+            </p>
+            <p>
+                Worlds:<br>     
+                W1 = {red circle, blue circle, green square}<br>     
+                W2 = {red triangle, blue circle, green square, yellow circle}<br>    
+                W3 = {red triangle, blue square, green square}
+            </p>
+            <p>
+                Human tabular meaning representation:<br>          
+                rep(e) = [ [e]<sub>W1</sub>, [e]<sub>W2</sub>, [e]<sub>W3</sub> ]
+            </p>
+            <ul>
+                <li>\([e]_{W1}\) = {red circle, blue circle}</li>
+                <li>\([e]_{W2}\) = {blue circle, yellow circle}</li>
+                <li>\([e]_{W3}\) = {}</li>
+            </ul>
+            <p>
+                Model tabular meaning representation:<br>   
+                rep(f) = [ [f]<sub>W1</sub>, [f]<sub>W2</sub>, [f]<sub>W3</sub> ]
+            </p>
+            <ul>
+                <li>\([f]_{W1}\) = decoder's prediction for each object in W1</li>
+                <li>\([f]_{W2}\) = decoder's prediction for each object in W2</li>
+                <li>\([f]_{W3}\) = decoder's prediction for each object in W3</li>
+            </ul>
+            <p>
+                Ideally, this should be the same as the human ones. 
+                The idea here is to understand whether the model has learned the global concept "circle".
+            </p>
+        </section>
+
+        <section>
+            <h2>4. Interpreting the Meaning of Messages</h2>
+            <p>
+                Now the authors ask: does the encoder's 64D output vector encode the same meanings as the human phrases? 
+                How often? And how explicitly?
+            </p>
+            <p>
+                They take a scene from their test set, and they check both the encoder's message \(f(W, X)\) (a 64d vector) and compute its tabular representation \(rep(f)\).
+                They then compute representations between three different theories of what the model might be doing:
+            </p>
+            <ol>
+                <li>Random Theory - Predicts object membership randomly.</li>
+                <li>Literal Theory - Predicts object membership based on whether object is selected in the original scene.</li>
+                <li>Human Theory - Picks object membership according to whether it would have been selected by the human message \(e(W, X)\).</li>
+            </ol>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/01b67dba-cb5c-4657-910f-4df3c3456797" alt="Comparison of theories">
+            </figure>
+            <p>
+                They then measure agreement between rep(f) and these representations on three levels.
+            </p>
+            <ol>
+                <li>Objects (do they predict the same objects belong to the set?)</li>
+                <li>Worlds (do they agree on all objects in a given world?)</li>
+                <li>Tabular meaning representations (do they agree across all tested worlds?)</li>
+            </ol>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/bbc4022e-fa04-4896-97d5-149a479ac482" alt="Agreement results">
+            </figure>
+            <p>
+                These results show that the network's language for describing an object sets aligns with human language on a high-level.
+            </p>
+        </section>
+
+        <section>
+            <h2>5. Interpreting the Structure of Messages</h2>
+            <p>
+                Now, the authors check whether encoder outputs contain logical constructions (negation - not, conjunction - and, disjunction - or) that
+                are found in human language and are specifically rampant in this dataset/task.
+            </p>
+            
+            <h4>Negation</h4>
+            <p>
+                To look for negation, they look for a consistent mathematical operation that could transform a vector \(f(W,X)\) representing all "the circles" into one representing "not circles".
+            </p>
+            <p>
+                They collect examples of the form \((e, f, e', f')\) where:
+            </p>
+            <ol>
+                <li>\(e\) and \(e'\) are natural language negations.</li>
+                <li>\(f\) and \(f'\) are the corresponding RNN representations.</li>
+                <li>\(rep(e) = rep(f)\) and \(rep(e') = rep(f')\), so representations match the human phrases in meaning.</li>
+            </ol>
+            <p>
+                The idea is that if the model does not have some notion of negation, there would be no predictable relationship between \((f, f')\). But if the model does have some notion of negation, then there exists a transformation N such that \(N \cdot f = f'\)
+            </p>
+            <p>
+                Using example \((f, f')\), they solve for \(\hat{N}\), a matrix which minimizes the sum of squared differences between the predicted negation \(N \cdot f\) and the actual negation \(f'\). 
+            </p>
+            <p>
+                They solve for N using the least squares solution:
+            </p>
+            <p>
+                F = \([f_1, ... f_n]^T\) (each f as a row)<br>          
+                F' = \([f'_1, ... f'_n]^T\) (each f' as a row)<br>    
+                \(\hat{N} = (F^T F)^{-1} (F^T F')\)
+            </p>
+            <p>
+                Then they test how often \(rep(Nf) = rep(e')\) on separate, test examples.<br>     
+                They observe 97% agreement for individual objects and 45% agreement on full representations.
+            </p>
+            <p>
+                This implies that \(\hat{N}\) is analogous to negation in natural language. And that the concept of negation is linear.
+            </p>
+            
+            <h4>Conjunction and Disjunction</h4>
+            <p>
+                Here, they collect examples of the form \((e, f, e', f', e'', f'')\) where:
+            </p>
+            <ol>
+                <li>\(rep(e) = rep(f)\)</li>
+                <li>\(rep(e') = rep(f')\)</li>
+                <li>\(rep(e'') = rep(f'')\)</li>
+                <li>\(e'' = e \cap e'\) conjunction OR \(e'' = e \cup e'\) disjunction.</li>
+            </ol>
+            <p>
+                They then solve for a matrix M that minimizes the difference between the predicted conjunction \((Mf + Mf')\) and the actual conjunction \(f''\). Or disjunction, depending on the case. 
+            </p>
+            <p>
+                They run disjunction tests as they did with negation and observe 92% agreement for individual objects but 19% on full representation. They don't report their conjunction test results. We assume they are not favorable. I hypothesize that the model captures conjunction and disjunction in ways that are less linear than negation.
+            </p>
+        </section>
+
+        <section>
+            <h2>6. Conclusions</h2>
+            <p>
+                The authors discovered a way to explore whether the compositional structure found in natural language can also be found in vectors produced by a neural network which has never seen human language. They do this by concentrating on the truth of the vector representation when applied to solve a problem, rather than the direct structure of it.
+            </p>
+            <p>
+                They also posit, as a future question, asking how or whether these vectors capture hierarchical information like in "not (blue and circular)". 
+            </p>
+        </section>
+
+        <section>
+            <h2>Reflection</h2>
+            
+            <h4>What are the strengths?</h4>
+            <p>
+                <ol>
+                    <li>Interesting and creative methodology.</li>
+                </ol>
+            </p>
+            
+            <h4>What are the weaknesses?</h4>
+            <p>
+                <ol>
+                    <li>Very confusing. Explanations are incredibly opaque.</li>
+                    <li>\(W_i\) was used to refer to a specific object in a world \(W\). Then \(W_i\) was used to refer to a world in a set of worlds { \(W_i\) }. I can not believe no reviewer caught this.</li>
+                    <li>\(e(W), f(W)\) are more accurately described as \(e(W,X), f(W,X)\).</li>
+                </ol>
+            </p>
+            
+            <h4>New Terms</h4>
+            <p>
+                <ol>
+                    <li>GRU Cells</li>
+                    <li>Least squares N calculation</li>
+                </ol>
+            </p>
+        </section>
+
+        <a href="../index.html" class="back-link">← Back to all papers</a>
+    </main>
+    
+    <footer>
+        <p>© 2025 Sike Ogieva | Summary created for Interpretability of Deep Neural Networks, Spring 2025</p>
+    </footer>
+
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</body>
+</html>

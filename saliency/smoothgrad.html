@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmoothGrad: Removing Noise by Adding Noise</title>
+    <link rel="stylesheet" href="../paper.css">   
+</head>
+<body>
+    <header>
+        <h1>SmoothGrad: Removing Noise by Adding Noise</h1>
+        <div class="authors">Daniel Smilkov, Nikhil Thorat, Been Kim, Fernanda Viegas, Martin Wattenberg</div>
+        <div class="publication">2017</div>
+
+        <p>
+            A method for clarifying gradient-based saliency maps by adding small amounts of noise to the input image, computing multiple gradient maps, and averaging them.
+        </p>
+
+        <div>
+            <a href="https://arxiv.org/pdf/1706.03825" class="paper-link" target="_blank">https://arxiv.org/pdf/1706.03825</a>
+            <a href="https://pair-code.github.io/saliency/#smoothgrad" class="paper-link" target="_blank">https://pair-code.github.io/saliency/#smoothgrad</a>
+        </div>
+    </header>
+    
+    <main>
+
+        <section>
+            <h2>1. Introduction</h2>
+            <p>
+                Interpretability of deep neural networks matter for trust, debugging and insight. Saliency maps (sensitivity maps, pixel attribution) is a common way of explaining visual models.
+            </p>
+            <p>
+                They can be occlusion or gradient-based and they highlight the parts of input images that are important to prediction. In practice, the resulting masks do tend to highlight portions of images that we would reasonably think should be important for a prediction.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/e44ebcbd-f9df-4b50-a4d4-ff193480ae97" alt="Saliency map examples" style="max-width: 600px; width: 100%;">
+            </figure>
+            <p>
+                Although, the gradient-based ones are often visually noisy and also highlight parts of images that a person would not expect to be relevant to prediction. Whether this phenomenon truly is noise or an expression of the actual working of the model is unclear.
+            </p>
+            <p>
+                All that said, SmoothGrad is a method for clarifying gradient based saliency maps. It works by adding small amounts of noises to the input image many times, computing the gradient map for each noisy input and finding their average to produce a final saliency map.
+            </p>
+            <p>
+                SmoothGrad can be combined with other algorithms. They also find that adding noise at training time further improves clarity of saliency maps.
+            </p>
+        </section>
+
+        <section>
+            <h2>2. Gradients as Sensitivity Maps</h2>
+            <p>
+                Consider an image classifier that classifies an input image \(x\) into classes in the set \(C\). The classifier computes an activation \(S_c\) for each class \(c \in C\). The final class prediction is the class with the highest activation:
+            </p>
+            <p>
+                \[class(x) = \text{argmax}_{c \in C} S_c(x)\]
+            </p>
+            <p>
+                One can then build a sensitivity map, \(M_c(x)\) as the gradient of the predicted probabilities with respect to the input image \(x\):
+            </p>
+            <p>
+                \[M_c(x) = \frac{\partial S_c(x)}{\partial x}\]
+            </p>
+            <p>
+                Intuitively, \(M_c(x)\) is how much a change to \(x\) would influence \(S_c(x)\).
+            </p>
+            
+            <h4>2.1. Previous Work on Enhancing Sensitivity Maps</h4>
+            <p>
+                Using gradients as a measure of importance can create a situation where a very important feature pushed the activation very close to 0 or 1 (saturates it), and the gradient becomes very small even though the feature is critical for the prediction.
+            </p>
+            <p>
+                This is why methods like Integrated Gradients integrate along a path from a baseline to the full image- to capture the feature's relevance across the entire range (not just at the end which can be prone to saturation). Other methods are: Layerwise Relevance Propagation and DeepLift.
+            </p>
+            <p>
+                Another method of enhancing saliency maps is by modifying backpropagation. Examples include: deconvolution (which ignores the "gating" behavior of ReLU during backpropagation and passes gradients through whether or not they were activated in the forward pass) and guided backpropagation.
+            </p>
+            <p>
+                Other methods like Grad-CAM and CAM combine gradient information across layers to create visualizations.
+            </p>
+            
+            <h4>2.2. Smoothing Noisy Gradients</h4>
+            <p>
+                An explanation for why gradient maps are noisy is that the derivative of \(S_c(x)\) tends to fluctuate sharply between pixels.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/31e758e1-666c-43f8-980e-3d1ee0654a67" alt="Noisy gradients visualization" style="max-width: 600px; width: 100%;">
+            </figure>
+            <p>
+                This suspicion is what inspired the authors to consider averaging neighborhoods around each pixel (i.e. smoothening the gradients). They do this by taking random pixels around the target pixel, noising them up, finding that derivative and then averaging them.
+            </p>
+            <p>
+                \[ \hat{M_c(x)} = \frac{1}{n} \sum_{1}^{n} M_c (x + N(0, \sigma^2))\]
+            </p>
+            <p>
+                \(n\) = number of samples.<br>    
+                \(N(0, \sigma^2)\) = Gaussian noise with standard deviation, \(\sigma\).
+            </p>
+            <p>
+                This is SMOOTHGRAD.
+            </p>
+        </section>
+
+        <section>
+            <h2>3. Experiments</h2>
+            
+            <h4>3.1. Visualization Techniques</h4>
+            <p>
+                <strong>Absolute value of gradients</strong>
+            </p>
+            <p>
+                <strong>Capping outlying values</strong>
+            </p>
+            <p>
+                <strong>Multiplying maps with the input images</strong>
+            </p>
+            
+            <h4>3.2. Hyperparameterization</h4>
+            <p>
+                The two hyperparameters in this are the sample size and the noise level or standard deviation input to our Gaussian random variable.
+            </p>
+            <p>
+                Noise is optimal at around 10 to 20%. How is SD converted to noise percentages?
+            </p>
+            <p>
+                Clarity improves with sample size but diminishing returns are observed as the sample size surpasses 50.
+            </p>
+            
+            <h4>3.3. Qualitative Comparison to Baseline Methods</h4>
+            <p>
+                SmoothGrad is compared qualitatively with three gradient methods: vanilla, Integrated Gradients (Sundararajan et al., 2017), and Guided BackProp (Springenberg et al., 2014).
+                The authors claim to observe SmoothGrad outperforms the rest in visual coherence. Guided BackProp produces the sharpest images but struggles with uniform backgrounds while SmoothGrad excels with them. 
+                SmoothGrad also outperforms the rest on discriminativity with BackProp performing the worst.
+            </p>
+            
+            <h4>3.4. Combining SmoothGrad with other Methods</h4>
+            
+            <h4>3.5. Adding Noise during Training</h4>
+            <p>
+                Apart from averaging several saliency maps from several noisy inputs.
+            </p>
+        </section>
+
+        <section>
+            <h2>4. Conclusion and Future Work</h2>
+            <p>
+                More theoretical inquiry into the idea that noisy gradients cause noisy maps.
+            </p>
+            <p>
+                Other ways to smooth noisy maps.
+            </p>
+            <p>
+                Quantitative assessments for assessing saliency maps.
+            </p>
+        </section>
+
+        <section>
+            <h2>Reflection</h2>
+            
+            <h4>What is this paper about?</h4>
+            <p>
+                SmoothGrad is a method for sharpening gradient based saliency maps. 
+                It relies on the hypothesis that the noisiness usually observed in gradient based activation maps are as a result of the fact that gradients change rapidly at small scales. 
+                It works by adding small amounts of noises to the input image many times, computing the gradient map for each noisy input and finding their average to produce a final saliency map.
+                Just as the name suggests, this helps to <strong>smooth</strong> out the sharp spikes in gradient from one pixel to another.
+            </p>
+            
+            <h4>What are the strengths?</h4>
+            <p>
+                <ol>
+                    <li>Simple and clearly explained methods.</li>
+                    <li>Hypothesizes about the cause of noise (sharp gradient changes) in saliency maps and then creates this method in response.</li>
+                    <li>Experiments carried out on classic benchmark datasets.</li>
+                    <li>Open source code.</li>
+                </ol>
+            </p>
+            
+            <h4>What are the weaknesses?</h4>
+            <p>
+                <ol>
+                    <li>Sparse explanation of prior work done on enhancing saliency maps.</li>
+                    <li>Comparison to baseline models is qualitative.</li>
+                    <li>Fails to explain the conversion from Gaussian standard deviation to noise percentages.</li>
+                </ol>
+            </p>
+            
+            <h4>What are some significant follow up work from this paper? How do they differ from this paper?</h4>
+            <p>
+                <ol>
+                    <li>Rethinking the Principle of Gradient Smooth Methods in Model Explanation<br>
+                    <a href="https://arxiv.org/abs/2410.07711" target="_blank">https://arxiv.org/abs/2410.07711</a><br>
+                    Dynamizes the noise hyperparameter</li>
+                    
+                    <li>NoiseGrad — Enhancing Explanations by Introducing Stochasticity to Model Weights<br>
+                    <a href="https://arxiv.org/abs/2106.10185" target="_blank">https://arxiv.org/abs/2106.10185</a><br>
+                    Adds noise to decision boundaries instead of the input then examines the fusion of this method with SmoothGrad (called FusionGrad)</li>
+                    
+                    <li>Smooth Grad-CAM++: An Enhanced Inference Level Visualization Technique for Deep Convolutional Neural Network Models<br>
+                    <a href="https://arxiv.org/abs/1908.01224" target="_blank">https://arxiv.org/abs/1908.01224</a><br>
+                    Combines SmoothGrad and GradCAM++ methods</li>
+                </ol>
+            </p>
+            
+            <h4>New Terms</h4>
+            <p>
+                <ol>
+                    <li>Gradient-based vs Occlusion-based methods for creating saliency maps</li>
+                    <li>Integrated gradient</li>
+                    <li>Layerwise Relevance Propagation</li>
+                    <li>DeepLift</li>
+                    <li>Deconvolution</li>
+                    <li>Guided Backpropagation</li>
+                </ol>
+            </p>
+        </section>
+
+        <a href="../index.html" class="back-link">← Back to all papers</a>
+    </main>
+    
+    <footer>
+        <p>© 2025 Sike Ogieva | Summary created for Interpretability of Deep Neural Networks, Spring 2025</p>
+    </footer>
+
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</body>
+</html>

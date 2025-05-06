@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Dissection: Quantifying Interpretability of Deep Visual Representations</title>
+    <link rel="stylesheet" href="../paper.css">   
+</head>
+<body>
+    <header>
+        <h1>Network Dissection: Quantifying Interpretability of Deep Visual Representations</h1>
+        <div class="authors">David Bau, Bolei Zhou, Aditya Khosla, Aude Oliva, and Antonio Torralba</div>
+        <div class="publication">2017</div>
+
+        <p>
+            This paper attempts to measure how interpretable or disentangled representations of convolutional neural networks are, automatically, without intermediate human intervention to map network pieces to human concepts.
+        </p>
+
+        <div>
+            <a href="https://arxiv.org/pdf/1704.05796" class="paper-link" target="_blank">https://arxiv.org/pdf/1704.05796</a>
+            <a href="https://netdissect.csail.mit.edu/" class="paper-link" target="_blank">https://netdissect.csail.mit.edu/</a>
+        </div>
+    </header>
+    
+    <main>
+
+        <section>
+            <h2>1. Introduction</h2>
+            <p>
+                Networks with disentangled representations can seem more interpretable, but interpreting models via their disentangled representations raises some questions about whether how we interpret models is actually how they work, and what aspects of training creating more or less entangled representations.
+            </p>
+            <p>
+                This paper introduces <strong>network dissection</strong> which is a framework for mapping latent representations to human-interpretable concepts. It uses <strong>Broden</strong> (a dense and broad dataset) on several CNNs (<strong>AlexNet, VGG, GoogLeNet, ResNet</strong>) to show that:
+            </p>
+            <p>
+                The direct mapping of neuron A to concept B can be scrambled (to for example become concept B across neurons A, D and Z) while the networks behaves exactly the same at its primary task.
+            </p>
+            
+            <h4>1.1. Related Work</h4>
+            <p>
+                Understanding CNN behavior can be achieved by:
+            </p>
+            <ol>
+                <li>Visualizing image portions that maximize activations.</li>
+                <li>Using backpropagation variants to generate important image features.</li>
+                <li>Isolating network pieces and assessing them on other tasks.<br>                 
+                But all these methods require human intervention in mapping the concepts while our authors are interested in mapping interpretable artifacts to human concepts automatically.</li>
+            </ol>
+            <p>
+                More research in understanding how individual pieces of a network include:
+            </p>
+            <ol>
+                <li>Showing units in scene detection networks act as object detectors.</li>
+                <li>Automatically generating images likely to cause high activations in certain neurons.</li>
+                <li>Placing probes (linear classifiers) between network layers to predict certain concepts from the layer's activations.</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>2. Network Dissection</h2>
+            <p>
+                The network dissection framework can be broken into three steps:
+            </p>
+            <ol>
+                <li>Choose a broad set of human-understandable concepts (outdoors, woman, food)</li>
+                <li>Gather data about how strongly the network's internal components react to these concepts (raw activation values).</li>
+                <li>Analyze the data to see how well the internal components' reaction align with the human concepts.</li>
+            </ol>
+            <p>
+                Remember the idea here is to quantify the network's disentanglement (a measure of interpretability) not its primary effectiveness. So it is okay that they check neuron-concept alignment, even though, in reality, some concepts are spread around all of its neurons in weird ways we can't deduce.
+            </p>
+            <p>
+                This paper collects visuals concepts from the <strong>Broden</strong> dataset (introduced below). Then it measures the alignment of each hidden unit of the CNN with each concept (in form of activation score). The number of distinct visual concepts that are aligned with any of the hidden units is an interpretability score.
+            </p>
+            
+            <h4>2.1. Broden: Broadly and Densely Labeled Dataset</h4>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/ce58d096-5604-4e3c-a131-e749fcc8e079" alt="Broden dataset sample images">
+            </figure>
+            <p>
+                The authors newly assembled Broden for this work from several other diverse, densely-labeled image datasets (ADE, Open-Surfaces, Pascal-Context, Pascal-Part, the Describable Textures Dataset). 
+            </p>
+            <p>
+                Each image's pixel is labelled with concepts it corresponds to, except for scenes and textures where the labels are image-wide. The pixels are also labelled with 1 of 11 colors. Other concept labels were merged across datasets and only labels with at least 10 image samples were included.
+            </p>
+            
+            <h4>2.2. Scoring Unit Interpretability</h4>
+            <p>
+                For every individual convolutional unit in the network, they run each of their 1,378 concepts from Broden and ask: does this unit align with this concept? This is a binary segmentation task (i.e. the answer is yes or no). This run is a forward pass. There is no need for training or back-propagation.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/83db2099-1b25-415f-b469-290c9228562a" alt="Network Dissection explanation part 1" style="max-width: 600px; width: 100%;">
+            </figure>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/0520c68b-d8c8-4720-a23f-0866168ec3b2" alt="Network Dissection explanation part 2" style="max-width: 600px; width: 100%;">
+            </figure>
+        </section>
+
+        <section>
+            <h2>3. Experiments</h2>
+            <p>
+                The CNN architectures they use include: <strong>AlexNet, GoogLeNet, VGG</strong> and <strong>ResNet</strong> trained on <strong>ImageNet</strong> (objects), <strong>Places205</strong> and <strong>Places365</strong> (places) datasets, for supervised tasks.
+            </p>
+            <p>
+                For self-supervised tasks, they use several recent models trained on predicting context, solving puzzles, predicting ego-motion, learning by moving, predicting video frame order, tracking, detecting object-centric alignment, colorizing images, predicting cross-channel and predicting ambient sound from frames.    
+                All these models use the AlexNet architecture or a variant of it.
+            </p>
+            
+            <h4>3.1. Human Evaluation of Interpretations</h4>
+            <p>
+                The goal here is to show their method produced interpretations which are "correct".
+            </p>
+            <p>
+                The authors established a form of ground truth by starting with convolutional units another study [40] had decided were interpretable and had labelled with concepts. This is important because not all units are interpretable, and we would only want to evaluate the method on the interpretable ones.
+            </p>
+            <p>
+                A group of human raters from Amazon Mechanical Turk were asked to evaluate [40]'s interpretations. Another group was asked to evaluate the interpretations from network dissection. For each interpretable unit, the raters got 15 images (from AlexNet-Places205) with highlighted patches and had to decide (yes/no) whether most of them corresponded with a given phrase.
+            </p>
+            <p>
+                The proportion of interpretations marked as descriptive by the human raters are reported per layer the unit came from in the following table.
+            </p>
+            <table>
+                <tr>
+                    <th></th>
+                    <th>conv1</th>
+                    <th>conv2</th>
+                    <th>conv3</th>
+                    <th>conv4</th>
+                    <th>conv5</th>
+                </tr>
+                <tr>
+                    <td>Interpretable Units</td>
+                    <td>57/96</td>
+                    <td>126/256</td>
+                    <td>247/384</td>
+                    <td>258/384</td>
+                    <td>195/256</td>
+                </tr>
+                <tr>
+                    <td>Human Consistency</td>
+                    <td>82%</td>
+                    <td>76%</td>
+                    <td>83%</td>
+                    <td>82%</td>
+                    <td>91%</td>
+                </tr>
+                <tr>
+                    <td>Network Dissection</td>
+                    <td>38%</td>
+                    <td>56%</td>
+                    <td>54%</td>
+                    <td>59%</td>
+                    <td>71%</td>
+                </tr>
+            </table>
+            <p>
+                Network dissection underperforms human interpretation, but still performs decently and like human interpretation, even better at higher layers.
+            </p>
+            
+            <h4>3.2. Measurement of Axis-Aligned Interpretability</h4>
+            <p>
+                Is it reasonable to measure interpretability by looking at individual neurons? When we find a neuron that can detect "face", does that mean that neuron learned to detect faces, or it's just a coincidence? 
+            </p>
+            <p>
+                The authors randomly change the basis of a representation (i.e. rotate the representation) and effectively mix its activity with others. If the representation loses some interpretative potential, we know it is <strong>not</strong> just a coincidence because if it was, why does a random new basis no longer have coincidences?
+            </p>
+            <p>
+                They use a random transformation (rotation) Q on the 256 units of AlexNet-Places205 conv5 and observe an 80% decrease in the number of unique detectors. This strongly indicates that networks genuinely learn the interpretations we query via dissection.
+            </p>
+            <p>
+                Additionally, the authors broke the rotation Q into smaller steps, going from a = 0 (no rotation) to a = 1 (completed rotation) and values in between represent partial rotations.
+            </p>
+            <p>
+                Measuring the interpretability (using the number of unique detectors) at each step shows that the loss of interpretability gradually happens as the rotation progresses.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/01fd195c-bb21-4467-9fb3-5850ac09202a" alt="Graph showing interpretability loss with rotation">
+            </figure>
+            <p>
+                It is important to note that the discriminative power never changed through each partial rotation step. So the authors conclude: good performance neither creates nor requires interpretability.
+            </p>
+            <p>
+                Interpretability is a different quality that must be measured separately to be understood.
+            </p>
+            
+            <h4>3.3. Disentangled Concepts by Layer</h4>
+            <p>
+                The authors use network dissection to compare the interpretability of the convolutional layers of Places205-AlexNet and ImageNet-AlexNet. Interpretability is measured in number of unique detectors.
+            </p>
+            <p>
+                Interpretability increases with deeper layers for high level concepts (objects, parts, scenes). It reduces for color.
+                For material, it stays roughly constant, improving very slightly. For texture, it improves, reduces at conv4 then picks back up for conv5.
+            </p>
+            <p>
+                Texture and color dominate the other concepts at the lower levels. At the higher, objects and texture.
+            </p>
+            
+            <h4>3.4. Network Architectures and Supervisions</h4>
+            <p>
+                Here, the authors measure the impact of architecture and supervision on interpretability.
+            </p>
+            <p>
+                <strong>Architecture</strong><br>   
+                The authors used the last layers of each CNN where semantic detectors are usually more prominent. They found deeper, more complex architectures tend to have better interpretability, with the ranking ResNet > VGG > GoogLeNet > AlexNet. The depth ranking is exactly the same.
+            </p>
+            <p>
+                <strong>Dataset</strong><br>      
+                The Places dataset was more interpretable than ImageNet. The authors hypothesize that this is perhaps because scene detectors have layers which learn object detection and object detection is pretty interpretable.
+            </p>
+            <p>
+                <strong>Supervision</strong><br>    
+                The architecture is controlled (AlexNet). Self-taught supervision turns out to be much weaker at learning interpretable concepts than annotated supervision.
+                But training on Places365 results in the largest interpretation. The colorization task is trained on grayscale images and learns virtually zero color detectors but learns texture detectors. The authors hypothesize that the interpretable concepts learned are those needed to succeed in the primary task.
+            </p>
+            
+            <h4>3.5. Training Conditions vs. Interpretability</h4>
+            <p>
+                The authors use the Places205-AlexNet as the baseline model to measure how training conditions affect interpretability. Then they make some variants using the same AlexNet architecture:
+            </p>
+            <ol>
+                <li><strong>Repeat1, Repeat2, Repeat3</strong> - random initialization of weights. 
+                The models achieve similar interpretability (in terms of unique detectors and total detectors).</li>
+                
+                <li><strong>NoDropout</strong> - dropouts are removed from fully connected layers.
+                More texture detectors emerge but fewer object detectors.</li>
+                
+                <li><strong>BatchNorm</strong> - batch normalization is applied at each convolutional layer.
+                Batch normalization significantly decreases interpretability. The authors hypothesize that batch normalization promotes random rotations. They also make the point that hyperparameterization should consider interpretability as well as discriminative power.</li>
+            </ol>
+            <p>
+                Additionally, they look at interpretability across training iterations and note that it begins to appear after 10,000 iterations. They also note that concept detectors never transition (i.e. texture detectors in one layer becoming object detectors as training goes on).
+            </p>
+            
+            <h4>3.6 Discrimination vs. Interpretability</h4>
+            <p>
+                The authors take CNN representations from higher layers and evaluate how well they transfer to a new task (action40 action recognition) by training linear SVMs on them and measuring the classification accuracy.
+            </p>
+            <p>
+                The more interpretable layers (layers with more unique object detectors) performed better on the transfer task. The authors hypothesize that performance on the secondary task does not just depend on the number of detectors but also on their relevance to the transfer task.
+            </p>
+            
+            <h4>3.7 Layer Width vs. Interpretability</h4>
+            <p>
+                We have found that network depth improves interpretability (section 3.4), and it is also known that depth improves discriminative power. 
+            </p>
+            <p>
+                Now, we look at the width (number of convolutional units at a layer). This is interesting, because it is widely understood while increasing width is very expensive, it has only marginal improvements on classification accuracy. Although, more recent research has started to show that wider networks can be made to rival deeper ones in performance.
+            </p>
+            <p>
+                The authors removed the fully connected layers of AlexNet and tripled the number of units at conv5 (from 256 to 768 units) then they add a global average pooling layer after conv5 to connect it to the final class prediction. They call it AlexNet-GAP-Wide.
+            </p>
+            <p>
+                They trained AlexNet-GAP-Wide on Places365 and not only observed similar classification accuracy with classic AlexNet, but also got many more unique detectors and total detectors at conv5.
+            </p>
+            <figure>
+                <img src="https://github.com/user-attachments/assets/693b196a-7d29-4b89-8ec8-e2eb88eeef5f" alt="Graph showing interpretability improvement with width">
+            </figure>
+            <p>
+                Although, increasing the units at conv5 to 1024 then 2048 does not improve interpretability further, indicating a ceiling on AlexNet's capacity to disentangle concepts, or a limit on the number of disentangled concepts that are useful in solving the primary task of scene classification.
+            </p>
+        </section>
+
+        <section>
+            <h2>4. Conclusion</h2>
+            <ol>
+                <li>Network dissection is an automatic framework for quantifying the interpretability of a neural network.</li>
+                <li>Interpretability is not an axis-independent phenomenon.</li>
+                <li>Training conditions and network architecture affect interpretability.</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>Reflection</h2>
+            
+            <h4>What are the strengths?</h4>
+            <p>
+                The work and outlook is thorough and visionary.
+            </p>
+            <p>
+                The authors consistently talk about implications next to results. And the idea that evaluating interpretability should be as standard as interpreting performance is a powerful, forward-looking idea.
+            </p>
+            
+            <h4>What are the weaknesses?</h4>
+            <ol>
+                <li>The IOU threshold for deciding whether a unit is a detector (of 0.04) is laughably low.</li>
+                <li>Broden has a limited number of concepts. It is not as robust as human interpretation, and in fact, network dissection considerably underperforms human interpretation.</li>
+                <li>Some explanations are creatively worded. Sections 2.2 and 3.1 took me several hours to understand.</li>
+                <li>When they choose to evaluate ND on only units already deemed interpretable by humans, they missed the opportunity find whether the method finds meaningful interpretation in neurons that aren't interpretable. If it does, should that not count against the framework?</li>
+                <li>Colors are over represented concepts in Broden with 59,250 samples of them. The next concepts are textures with 1,703 samples which is much less. Scenes have just 38.</li>
+                <li>There is a good chance that human raters from Amazon Mechanical Turk click random buttons to finish the task quickly and collect their pay.</li>
+                <li>They argued that depth of networks improved interpretability then ranked the architectures by interpretability without mentioning their relative depths. Although, anybody can look it up, it would be more complete if they had also ranked the depth.</li>
+            </ol>
+            
+            <h4>What are some significant follow up work from this paper? How do they differ from this paper?</h4>
+            <p>
+                The authors mentioned working on future research to capture the benefits of batch normalization without losing interpretability, but they never published anything of the sort. And nobody else did either.
+            </p>
+            <p>
+                DISCOVER: Making Vision Networks Interpretable via Competition and Dissection (2023)<br>      
+                Introduces architectural changes that encourages neurons to activate sparsely (with ~ 4% of neurons activating for a given input) and consequently, specialize more clearly. This makes network dissection easier.
+            </p>
+        </section>
+
+        <a href="../index.html" class="back-link">← Back to all papers</a>
+    </main>
+    
+    <footer>
+        <p>© 2025 Sike Ogieva | Summary created for Interpretability of Deep Neural Networks, Spring 2025</p>
+    </footer>
+
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</body>
+</html>
